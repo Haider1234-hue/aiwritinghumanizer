@@ -1,0 +1,91 @@
+export const defaultPosts = [
+  {
+    id: "natural-ai-writing",
+    slug: "how-to-make-ai-writing-sound-more-natural",
+    title: "How to Make AI Writing Sound More Natural",
+    category: "Writing",
+    date: "June 2026",
+    readTime: "5 min read",
+    excerpt:
+      "Practical editing patterns that make generated drafts clearer, warmer, and less mechanical without changing the core meaning.",
+    content: [
+      "AI drafts often sound polished but flat. The quickest way to improve them is to add a natural rhythm: short sentences beside longer ones, clear transitions, and examples that feel specific to the reader.",
+      "Start by removing repeated phrases, overly formal transitions, and broad claims. Replace them with concrete details, direct verbs, and a tone that matches the audience.",
+      "A strong final pass should check flow, accuracy, and usefulness. The goal is not to hide that tools helped; it is to make the writing clear enough that people want to keep reading.",
+    ],
+  },
+  {
+    id: "humanizer-vs-detector",
+    slug: "ai-humanizer-vs-ai-detector",
+    title: "AI Humanizer vs AI Detector: What Each Tool Does",
+    category: "AI Tools",
+    date: "June 2026",
+    readTime: "4 min read",
+    excerpt:
+      "A simple breakdown of rewriting, scoring, and reviewing text so teams can choose the right workflow before publishing.",
+    content: [
+      "An AI detector reviews text and estimates whether it follows patterns commonly associated with generated writing. A humanizer rewrites text so it feels clearer, more varied, and more natural.",
+      "The best workflow is usually review first, rewrite second, and then do a final human edit. That keeps the meaning intact while improving tone and readability.",
+      "Neither tool replaces judgment. They work best when a person checks facts, trims awkward wording, and makes sure the finished piece fits the context.",
+    ],
+  },
+  {
+    id: "product-descriptions",
+    slug: "writing-product-descriptions-that-feel-human",
+    title: "Writing Product Descriptions That Feel Human",
+    category: "Marketing",
+    date: "May 2026",
+    readTime: "6 min read",
+    excerpt:
+      "Turn stiff feature lists into useful buyer-facing copy with clearer benefits, natural rhythm, and fewer repetitive phrases.",
+    content: [
+      "Product descriptions work best when they connect a feature to a real benefit. Instead of listing what something has, explain what it helps the buyer do faster, easier, or with more confidence.",
+      "Use plain words, specific details, and natural sentence variation. Avoid repeating the same adjective across every product because it makes the page feel automated.",
+      "Before publishing, read the description out loud. If it sounds like a catalog template, simplify it and bring the focus back to the customer.",
+    ],
+  },
+  {
+    id: "publishing-checklist",
+    slug: "quick-checklist-before-publishing-ai-assisted-content",
+    title: "Quick Checklist Before Publishing AI-Assisted Content",
+    category: "Editing",
+    date: "May 2026",
+    readTime: "3 min read",
+    excerpt:
+      "A compact review flow for tone, accuracy, formatting, and readability before AI-assisted writing goes live.",
+    content: [
+      "Check the main claim first. AI-assisted drafts can sound confident even when a detail is incomplete, outdated, or too broad.",
+      "Next, scan for tone. Remove robotic transitions, repeated structure, and filler phrases that do not add value.",
+      "Finally, polish formatting. Short paragraphs, clear headings, and direct calls to action make the content easier to use.",
+    ],
+  },
+];
+
+export async function fetchBlogPosts() {
+  try {
+    const response = await fetch(`/api/blog.php?ts=${Date.now()}`, {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      throw new Error("Blog API unavailable");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data.posts) && data.posts.length
+      ? data.posts
+      : defaultPosts;
+  } catch {
+    return defaultPosts;
+  }
+}
+
+export function getPostBySlug(posts, slug) {
+  return posts.find((post) => post.slug === slug);
+}
+
+export function getPostCategories(posts) {
+  return ["All", ...new Set(posts.map((post) => post.category).filter(Boolean))];
+}
