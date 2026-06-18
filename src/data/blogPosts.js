@@ -1,3 +1,7 @@
+// ── Default posts ────────────────────────────────────────────────────────────
+// These are shown instantly before the API responds (no loading flash).
+// New fields default to empty so legacy posts render fine everywhere.
+
 export const defaultPosts = [
   {
     id: "natural-ai-writing",
@@ -13,6 +17,13 @@ export const defaultPosts = [
       "Start by removing repeated phrases, overly formal transitions, and broad claims. Replace them with concrete details, direct verbs, and a tone that matches the audience.",
       "A strong final pass should check flow, accuracy, and usefulness. The goal is not to hide that tools helped; it is to make the writing clear enough that people want to keep reading.",
     ],
+    tags: [],
+    featuredImage: "",
+    featuredImageAlt: "",
+    focusKeyword: "",
+    metaTitle: "How to Make AI Writing Sound More Natural | AIWritingHumanizer",
+    metaDescription:
+      "Practical editing patterns that make generated drafts clearer, warmer, and less mechanical without changing the core meaning.",
   },
   {
     id: "humanizer-vs-detector",
@@ -28,6 +39,13 @@ export const defaultPosts = [
       "The best workflow is usually review first, rewrite second, and then do a final human edit. That keeps the meaning intact while improving tone and readability.",
       "Neither tool replaces judgment. They work best when a person checks facts, trims awkward wording, and makes sure the finished piece fits the context.",
     ],
+    tags: [],
+    featuredImage: "",
+    featuredImageAlt: "",
+    focusKeyword: "",
+    metaTitle: "AI Humanizer vs AI Detector: What Each Tool Does | AIWritingHumanizer",
+    metaDescription:
+      "A simple breakdown of rewriting, scoring, and reviewing text so teams can choose the right workflow before publishing.",
   },
   {
     id: "product-descriptions",
@@ -43,6 +61,13 @@ export const defaultPosts = [
       "Use plain words, specific details, and natural sentence variation. Avoid repeating the same adjective across every product because it makes the page feel automated.",
       "Before publishing, read the description out loud. If it sounds like a catalog template, simplify it and bring the focus back to the customer.",
     ],
+    tags: [],
+    featuredImage: "",
+    featuredImageAlt: "",
+    focusKeyword: "",
+    metaTitle: "Writing Product Descriptions That Feel Human | AIWritingHumanizer",
+    metaDescription:
+      "Turn stiff feature lists into useful buyer-facing copy with clearer benefits, natural rhythm, and fewer repetitive phrases.",
   },
   {
     id: "publishing-checklist",
@@ -58,9 +83,31 @@ export const defaultPosts = [
       "Next, scan for tone. Remove robotic transitions, repeated structure, and filler phrases that do not add value.",
       "Finally, polish formatting. Short paragraphs, clear headings, and direct calls to action make the content easier to use.",
     ],
+    tags: [],
+    featuredImage: "",
+    featuredImageAlt: "",
+    focusKeyword: "",
+    metaTitle: "Quick Checklist Before Publishing AI-Assisted Content | AIWritingHumanizer",
+    metaDescription:
+      "A compact review flow for tone, accuracy, formatting, and readability before AI-assisted writing goes live.",
   },
 ];
 
+// ── Normalize a post from the API ─────────────────────────────────────────────
+// Fills in missing new fields so components never have to null-check.
+function normalizePost(post) {
+  return {
+    tags: [],
+    featuredImage: "",
+    featuredImageAlt: "",
+    focusKeyword: "",
+    metaTitle: "",
+    metaDescription: "",
+    ...post,
+  };
+}
+
+// ── Fetch posts from the API ──────────────────────────────────────────────────
 export async function fetchBlogPosts() {
   try {
     const response = await fetch(`/api/blog.php?ts=${Date.now()}`, {
@@ -69,23 +116,35 @@ export async function fetchBlogPosts() {
       headers: { Accept: "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error("Blog API unavailable");
-    }
+    if (!response.ok) throw new Error("Blog API unavailable");
 
     const data = await response.json();
-    return Array.isArray(data.posts) && data.posts.length
-      ? data.posts
-      : defaultPosts;
+
+    if (Array.isArray(data.posts) && data.posts.length) {
+      return data.posts.map(normalizePost);
+    }
+
+    return defaultPosts;
   } catch {
     return defaultPosts;
   }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 export function getPostBySlug(posts, slug) {
   return posts.find((post) => post.slug === slug);
 }
 
 export function getPostCategories(posts) {
-  return ["All", ...new Set(posts.map((post) => post.category).filter(Boolean))];
+  return [
+    "All",
+    ...new Set(posts.map((post) => post.category).filter(Boolean)),
+  ];
+}
+
+// Returns all unique tags across all posts, sorted alphabetically
+export function getAllTags(posts) {
+  const set = new Set();
+  posts.forEach((post) => (post.tags || []).forEach((t) => set.add(t)));
+  return [...set].sort();
 }
