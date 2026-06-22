@@ -297,6 +297,25 @@ export default function BlogDetail() {
         .prose-blog a:hover { color: #93C5FD; }
         .prose-blog strong { color: #F9FAFB; font-weight: 700; }
         .prose-blog em { color: #E5E7EB; }
+        .prose-blog table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1.5rem 0;
+          overflow-x: auto;
+          display: block;
+        }
+        .prose-blog table td, .prose-blog table th {
+          border: 1px solid rgba(255,255,255,0.12);
+          padding: 0.6rem 0.9rem;
+          text-align: left;
+          vertical-align: top;
+        }
+        .prose-blog table th {
+          background: rgba(255,255,255,0.05);
+          color: #F3F4F6;
+          font-weight: 700;
+        }
+        .prose-blog table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
       `}</style>
     </>
   );

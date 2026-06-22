@@ -23,7 +23,12 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import { Check, Edit3, LogOut, Plus, Save, Trash2, X, Image as ImageIcon } from "lucide-react";
+import Link from "@tiptap/extension-link";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
+import { Check, Edit3, LogOut, Plus, Save, Trash2, X, Image as ImageIcon, Link as LinkIcon, Table as TableIcon, Unlink } from "lucide-react";
 import { defaultPosts, fetchBlogPosts } from "../data/blogPosts";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -108,8 +113,11 @@ function ToolbarBtn({ onClick, active, title, children }) {
 
 // ─── Rich text toolbar ───────────────────────────────────────────────────────
 
-function EditorToolbar({ editor, onInsertImage }) {
+function EditorToolbar({ editor, onInsertImage, onInsertLink }) {
   if (!editor) return null;
+
+  const inTable = editor.isActive("table");
+
   return (
     <div className="flex flex-wrap gap-1 px-3 py-2 border-b border-white/10 bg-[#0b1015]/60 rounded-t-xl">
       <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold">B</ToolbarBtn>
@@ -130,9 +138,80 @@ function EditorToolbar({ editor, onInsertImage }) {
       <ToolbarBtn onClick={onInsertImage} title="Insert image">
         <span className="flex items-center gap-1"><ImageIcon size={13} /> Image</span>
       </ToolbarBtn>
+      <ToolbarBtn onClick={onInsertLink} active={editor.isActive("link")} title="Insert link on selected text">
+        <span className="flex items-center gap-1"><LinkIcon size={13} /> Link</span>
+      </ToolbarBtn>
+      {editor.isActive("link") && (
+        <ToolbarBtn onClick={() => editor.chain().focus().unsetLink().run()} title="Remove link">
+          <Unlink size={13} />
+        </ToolbarBtn>
+      )}
+      <ToolbarBtn
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        title="Insert table"
+      >
+        <span className="flex items-center gap-1"><TableIcon size={13} /> Table</span>
+      </ToolbarBtn>
+      {inTable && (
+        <>
+          <span className="w-px bg-white/10 mx-1" />
+          <ToolbarBtn onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add column before">+Col←</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add column after">+Col→</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete column">-Col</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().addRowBefore().run()} title="Add row before">+Row↑</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().addRowAfter().run()} title="Add row after">+Row↓</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().deleteRow().run()} title="Delete row">-Row</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().toggleHeaderRow().run()} title="Toggle header row">Hdr</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().mergeOrSplitCell().run()} title="Merge / split cells">Merge</ToolbarBtn>
+          <ToolbarBtn onClick={() => editor.chain().focus().deleteTable().run()} title="Delete table">-Table</ToolbarBtn>
+        </>
+      )}
       <span className="w-px bg-white/10 mx-1" />
       <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Undo">↩</ToolbarBtn>
       <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} title="Redo">↪</ToolbarBtn>
+    </div>
+  );
+}
+
+// ─── Link insertion dialog ────────────────────────────────────────────────────
+
+function LinkDialog({ initialUrl, onInsert, onClose }) {
+  const [url, setUrl] = useState(initialUrl || "");
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+      <div className="bg-[#121A21] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-bold text-lg">Insert Link</h3>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white"><X size={18} /></button>
+        </div>
+
+        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">URL</label>
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://..."
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); if (url.trim()) onInsert(url.trim()); }
+          }}
+          className="w-full bg-[#0b1015] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 mb-5"
+        />
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => { if (url.trim()) onInsert(url.trim()); }}
+            disabled={!url.trim()}
+            className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold rounded-xl px-4 py-2 transition-colors"
+          >
+            Insert
+          </button>
+          <button type="button" onClick={onClose} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-xl px-4 py-2">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -333,6 +412,7 @@ export default function Admin() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("content"); // "content" | "seo"
 
   const categories = useMemo(
@@ -347,6 +427,11 @@ export default function Admin() {
       Underline,
       Image.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({ placeholder: "Write your blog post here…" }),
+      Link.configure({ openOnClick: false, autolink: false }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: selectedPost.content || "",
     onUpdate: ({ editor }) => {
@@ -461,6 +546,22 @@ export default function Admin() {
     [editor]
   );
 
+  const handleOpenLinkDialog = useCallback(() => {
+    if (!editor || editor.state.selection.empty) {
+      setMessage("Select some text first, then click Link.");
+      return;
+    }
+    setShowLinkDialog(true);
+  }, [editor]);
+
+  const handleInsertLink = useCallback(
+    (url) => {
+      editor?.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+      setShowLinkDialog(false);
+    },
+    [editor]
+  );
+
   const selectPost = (post) => {
     const normalized = normalizePostForForm(post);
     setSelectedPost(normalized);
@@ -515,6 +616,14 @@ export default function Admin() {
     <>
       {showImageDialog && (
         <ImageDialog onInsert={handleInsertImage} onClose={() => setShowImageDialog(false)} />
+      )}
+
+      {showLinkDialog && (
+        <LinkDialog
+          initialUrl={editor?.getAttributes("link").href}
+          onInsert={handleInsertLink}
+          onClose={() => setShowLinkDialog(false)}
+        />
       )}
 
       <main className="min-h-screen bg-[#0b1015] text-gray-300 pt-32 md:pt-40 pb-20 px-4 sm:px-6 lg:px-12">
@@ -719,7 +828,7 @@ export default function Admin() {
                     <div>
                       <span className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Content</span>
                       <div className="border border-white/10 rounded-xl overflow-hidden bg-[#0b1015]">
-                        <EditorToolbar editor={editor} onInsertImage={() => setShowImageDialog(true)} />
+                        <EditorToolbar editor={editor} onInsertImage={() => setShowImageDialog(true)} onInsertLink={handleOpenLinkDialog} />
                         <EditorContent editor={editor} />
                       </div>
                     </div>
@@ -856,6 +965,13 @@ export default function Admin() {
         .ProseMirror img.ProseMirror-selectednode { outline: 2px solid #3B82F6; }
         .ProseMirror a { color: #60A5FA; text-decoration: underline; }
         .ProseMirror p { margin: 0.6rem 0; line-height: 1.7; }
+        .ProseMirror table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 1rem 0; overflow: hidden; }
+        .ProseMirror table td, .ProseMirror table th { border: 1px solid rgba(255,255,255,0.15); padding: 0.5rem 0.75rem; vertical-align: top; position: relative; }
+        .ProseMirror table th { background: rgba(255,255,255,0.06); font-weight: 700; text-align: left; }
+        .ProseMirror table .selectedCell { background: rgba(59,130,246,0.15); }
+        .ProseMirror table .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: #3B82F6; pointer-events: none; }
+        .ProseMirror .tableWrapper { overflow-x: auto; }
+        .ProseMirror.resize-cursor { cursor: col-resize; }
       `}</style>
     </>
   );
